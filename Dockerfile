@@ -37,26 +37,23 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Set the working directory in the container
+# RUN useradd --create-home containeruser
+# USER containeruser
 WORKDIR /home/containeruser
 
 ENV VIRTUALENV=/home/containeruser/venv
-RUN python3 -m venv $VIRTUALENV
-ENV PATH="$VIRTUALENV/bin:$PATH"
 
-# Install Python dependencies
-RUN pip install --no-cache-dir torch openai-whisper
-
-# # Copy the src directory contents into the container at /src
-# COPY --chown=containeruser src/ src/
+# Copy the src directory contents into the container at /src
 COPY src/ src/
 
 # Copy only the necessary files from the builder stage
-# COPY --from=builder /build/venv /home/containeruser/venv
+COPY --from=builder /build/venv /home/containeruser/venv
 COPY --from=builder /root/.cache/whisper /root/.cache/whisper
 
+RUN echo "source venv/bin/activate" >> .bashrc
+ENV PATH="$VIRTUALENV/bin:$PATH"
+
 RUN mkdir $NEXT_DIR 
-# RUN chown -R containeruser:containeruser $NEXT_DIR
-# RUN chmod -R 755 $NEXT_DIR
 
 # Run the application
 ENTRYPOINT ["python", "-m", "src.file_access.app"]
